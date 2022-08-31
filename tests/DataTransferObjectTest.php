@@ -569,4 +569,36 @@ class DataTransferObjectTest extends TestCase
         $this->assertStringContainsString('i_am_required` to be of type `string`, instead got value `null`', $actual);
         $this->assertStringContainsString('so_am_i` to be of type `integer`, instead got value `null`', $actual);
     }
+
+    /** @test */
+    public function dto_casts_from_docblock_value()
+    {
+        $data = [
+            'Name' => 'Alice'
+        ];
+
+        $object = new class($data) extends DataTransferObject {
+            /** @cast Name */
+            public $name;
+        };
+
+        $this->assertEquals('Alice', $object->name);
+    }
+
+    /** @test */
+    public function dto_casts_from_docblock_value_multiline()
+    {
+        $data = [
+            'Name' => 'Alice'
+        ];
+
+        $object = new class($data) extends DataTransferObject {
+            /**
+             * @cast Name
+             */
+            public $name;
+        };
+
+        $this->assertEquals('Alice', $object->name);
+    }
 }

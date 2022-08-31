@@ -61,6 +61,10 @@ abstract class DataTransferObject
                 );
             }
 
+            $castFieldNames = $this->getFieldNamesFromReflection();
+            $originalField = $field;
+            $field = $castFieldNames[$field] ?? $field;
+
             $value = $parameters[$field] ?? $this->{$field} ?? null;
 
             $value = $this->castValue($valueCaster, $validator, $value);
@@ -76,9 +80,9 @@ abstract class DataTransferObject
                 continue;
             }
 
-            $this->{$field} = $value;
+            $this->{$originalField} = $value;
 
-            unset($parameters[$field]);
+            unset($parameters[$originalField], $parameters[$field]);
         }
 
         if ($invalidTypes) {
@@ -200,6 +204,26 @@ abstract class DataTransferObject
         });
     }
 
+    protected function getFieldNamesFromReflection(): array
+    {
+        return DTOCache::resolve(static::class . '_fields', function () {
+            $class = new ReflectionClass(static::class);
+            $properties = [];
+            foreach ($class->getProperties(ReflectionProperty::IS_PUBLIC) as $reflectionProperty) {
+                if ($reflectionProperty->isStatic()) {
+                    continue;
+                }
+
+                $field = $reflectionProperty->getName();
+                if ($name = $this->getCastFieldName($reflectionProperty)) {
+                    $properties[$field] = $name;
+                }
+            }
+
+            return $properties;
+        });
+    }
+
     /**
      * @param \Spatie\DataTransferObject\ValueCaster $valueCaster
      * @param \Spatie\DataTransferObject\FieldValidator $fieldValidator
@@ -219,5 +243,21 @@ abstract class DataTransferObject
     protected function getValueCaster(): ValueCaster
     {
         return new ValueCaster();
+    }
+
+    protected function getCastFieldName(ReflectionProperty $reflectionProperty): ?string
+    {
+        $docDefinition = null;
+        if ($reflectionProperty->getDocComment()) {
+            preg_match(
+                DocblockFieldValidator::DOCKBLOCK_VALUE_REGEXP,
+                $reflectionProperty->getDocComment(),
+                $matches
+            );
+
+            $docDefinition = $matches[1] ?? null;
+        }
+
+        return $docDefinition;
     }
 }

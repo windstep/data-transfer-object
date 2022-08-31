@@ -30,6 +30,10 @@ class DocblockFieldValidator extends FieldValidator
         /x
 REGEXP;
 
+    // This matches all definitions like @cast originalName
+    public const DOCKBLOCK_VALUE_REGEXP = '/@cast\s+?([\w\_]+)/x';
+
+
     public function __construct(string $definition, bool $hasDefaultValue = false)
     {
         preg_match(
